@@ -91,9 +91,9 @@ def run():
         if os.path.exists(os.path.join(dstdir, f"{task_config['task_id']}.json")):
             print(f"Skip {task_config['task_id']}.")
             continue
-        if task_config['task_id'] in list(range(600, 650))+list(range(681, 689)):
-            print("Reddit post task. Sleep 30 mins.")
-            time.sleep(1800)
+        #if task_config['task_id'] in list(range(600, 650))+list(range(681, 689)):
+        #    print("Reddit post task. Sleep 30 mins.")
+        #    time.sleep(1800)
         env = WebArenaEnvironmentWrapper(config_file=config_file, 
                                         max_browser_rows=config.env.max_browser_rows, 
                                         max_steps=config.max_steps, 

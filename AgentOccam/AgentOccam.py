@@ -4,7 +4,7 @@ from AgentOccam.llms.mistral import call_mistral, call_mistral_with_messages, ar
 from AgentOccam.llms.cohere import call_cohere, call_cohere_with_messages, arrange_message_for_cohere
 from AgentOccam.llms.llama import call_llama, call_llama_with_messages, arrange_message_for_llama
 from AgentOccam.llms.titan import call_titan, call_titan_with_messages, arrange_message_for_titan
-from AgentOccam.llms.gpt import call_gpt, call_gpt_with_messages, arrange_message_for_gpt
+from AgentOccam.llms.gpt import call_azureopenai, call_azureopenai_with_messages, arrange_message_for_azureopenai
 from AgentOccam.llms.gemini import call_gemini, call_gemini_with_messages, arrange_message_for_gemini
 from AgentOccam.utils import CURRENT_DIR, HOMEPAGE_URL
 
@@ -29,7 +29,7 @@ CALL_MODEL_MAP = {
     "cohere": call_cohere,
     "llama": call_llama,
     "titan": call_titan,
-    "gpt": call_gpt,
+    "gpt": call_azureopenai,
     "gemini": call_gemini,
 }
 CALL_MODEL_WITH_MESSAGES_FUNCTION_MAP = {
@@ -38,7 +38,7 @@ CALL_MODEL_WITH_MESSAGES_FUNCTION_MAP = {
     "cohere": call_cohere_with_messages,
     "llama": call_llama_with_messages,
     "titan": call_titan_with_messages,
-    "gpt": call_gpt_with_messages,
+    "gpt": call_azureopenai_with_messages,
     "gemini": call_gemini_with_messages,
 }
 ARRANGE_MESSAGE_FOR_MODEL_MAP = {
@@ -47,7 +47,7 @@ ARRANGE_MESSAGE_FOR_MODEL_MAP = {
     "cohere": arrange_message_for_cohere,
     "llama": arrange_message_for_llama,
     "titan": arrange_message_for_titan,
-    "gpt": arrange_message_for_gpt,
+    "gpt": arrange_message_for_azureopenai,
     "gemini": arrange_message_for_gemini,
 }
 
@@ -67,14 +67,14 @@ class Agent:
             self.online_interaction = {k: None for k in DEFAULT_ONLINE_INTERACTION_ELEMENTS}
 
         self.model_family = [model_family for model_family in MODEL_FAMILIES if model_family in self.config.model][0]
-        self.call_model = partial(CALL_MODEL_MAP[self.model_family], model_id=self.config.model)
-        self.call_model_with_message = partial(CALL_MODEL_WITH_MESSAGES_FUNCTION_MAP[self.model_family], model_id=self.config.model)
+        self.call_model = partial(CALL_MODEL_MAP[self.model_family])
+        self.call_model_with_message = partial(CALL_MODEL_WITH_MESSAGES_FUNCTION_MAP[self.model_family])
         self.arrange_message_for_model = ARRANGE_MESSAGE_FOR_MODEL_MAP[self.model_family]
 
     def shift_model(self, model_id):
         self.model_family = [model_family for model_family in MODEL_FAMILIES if model_family in model_id][0]
-        self.call_model = partial(CALL_MODEL_MAP[self.model_family], model_id=model_id)
-        self.call_model_with_message = partial(CALL_MODEL_WITH_MESSAGES_FUNCTION_MAP[self.model_family], model_id=model_id)
+        self.call_model = partial(CALL_MODEL_MAP[self.model_family])
+        self.call_model_with_message = partial(CALL_MODEL_WITH_MESSAGES_FUNCTION_MAP[self.model_family])
         self.arrange_message_for_model = ARRANGE_MESSAGE_FOR_MODEL_MAP[self.model_family]
 
     def prune_message_list(self, message_list):
@@ -616,25 +616,25 @@ class Actor(Agent):
         }
 
         if self.config.others.verbose > 0 and self.config.verbose > 0:
-            with open(self.output_trash_path, "a") as af:
+            with open(self.output_trash_path, "a", encoding="utf-8") as af:
                 af.write("-"*32+"ACTOR"+"-"*32+"\n")
             for t in self.config.trash:
                 content = VERBOSE_TO_CONTENT_MAP.get(t, "")
-                with open(self.output_trash_path, "a") as af:
+                with open(self.output_trash_path, "a", encoding="utf-8") as af:
                     af.write(f"{t.upper()}:\n{content}\n\n")
-            with open(self.output_play_path, "w") as _:
+            with open(self.output_play_path, "w", encoding="utf-8") as _:
                 pass
             for p in other_play_keys:
                 content = VERBOSE_TO_CONTENT_MAP.get(p, "")
-                with open(self.output_play_path, "a") as af:
+                with open(self.output_play_path, "a", encoding="utf-8") as af:
                     af.write(f"{p.upper()}:\n{content}\n\n")
             for i, action_elements in enumerate(action_element_list):
                 if len(action_element_list) > 1:
-                    with open(self.output_play_path, "a") as af:
+                    with open(self.output_play_path, "a", encoding="utf-8") as af:
                         af.write("-"*32+f"AGENT {i}"+"-"*32+"\n")
                 for action_element_key in action_element_keys:
                     content = action_elements.get(action_element_key, "N/A")
-                    with open(self.output_play_path, "a") as af:
+                    with open(self.output_play_path, "a", encoding="utf-8") as af:
                         af.write(f"{action_element_key.upper()}:\n{content}\n\n")
     
     def parse_plan(self, planning):
@@ -1030,11 +1030,11 @@ class Critic(Agent):
             "response": model_response
         }
         if self.config.others.verbose > 0 and self.config.verbose > 0:
-            with open(self.output_trash_path, "a") as af:
+            with open(self.output_trash_path, "a", encoding="utf-8") as af:
                 af.write("-"*32+"CRITIC"+"-"*32+"\n")
             for t in self.config.trash:
                 content = VERBOSE_TO_CONTENT_MAP[t]
-                with open(self.output_trash_path, "a") as af:
+                with open(self.output_trash_path, "a", encoding="utf-8") as af:
                     af.write(f"{t.upper()}:\n{content}\n\n")
 
     def update_actor_basic_info(self, **actor_basic_info_dict):
@@ -1181,11 +1181,11 @@ class Judge(Agent):
             "response": model_response
         }
         if self.config.others.verbose > 0 and self.config.verbose > 0:
-            with open(self.output_trash_path, "a") as af:
+            with open(self.output_trash_path, "a", encoding="utf-8") as af:
                 af.write("-"*32+"JUDGE"+"-"*32+"\n")
             for t in self.config.trash:
                 content = VERBOSE_TO_CONTENT_MAP[t]
-                with open(self.output_trash_path, "a") as af:
+                with open(self.output_trash_path, "a", encoding="utf-8") as af:
                     af.write(f"{t.upper()}:\n{content}\n\n")
 
     def flatten_action_element_list(self, action_element_list):
@@ -1329,7 +1329,7 @@ class AgentOccam:
             prompt_template=self.prompt_dict["actor"],
             plan_tree_node=PlanTreeNode(id=0, type="branch", text=f"Find the solution to \"{self.objective}\"", level=0, url=self.online_url, step=0)
         )
-        with open(self.actor.output_trash_path, "w") as _:
+        with open(self.actor.output_trash_path, "w", encoding="utf-8") as _:
             pass
 
     def init_critic(self):
@@ -1427,6 +1427,64 @@ class AgentOccam:
                     )
 
         return status if "status" in locals() and isinstance(status, dict) else env.status()
+    
+    def pre_execute_action(self, objective, env):
+        self.objective = objective
+        self.sites = env.get_sites()
+        observation = env.observation()
+        url = env.get_url()
+        self.update_online_state(url=url, observation=observation)
+        self.init_actor()
+        self.init_critic()
+        self.init_judge()
+
+    def execute_action(self, env):
+        observation = env.observation()
+        url = env.get_url()
+        self.update_online_state(url=url, observation=observation)
+        self.actor.update_online_state(url=url, observation=observation)
+        self.critic.update_online_state(url=url, observation=observation)
+        self.judge.update_online_state(url=url, observation=observation)
+        action_elements, action_element_list = self.predict_action()
+        action = action_elements["action"]
+        navigation_action = action_elements["action"] if not action_elements.get("navigation action", "") else action_elements.get("navigation action", "")
+        status = env.step(navigation_action)
+        if navigation_action and self.is_navigation(action=navigation_action) and status == False: # means invalid action
+            flaw_node = self.actor.active_node
+            flaw_node.note.append(f"STEP {self.get_step()}: You generate action \"{action}\", which has INVALID syntax. Strictly follow the action specifications.")          
+        DOCUMENTED_INTERACTION_ELEMENT_KEY_TO_CONTENT_MAP = {
+            "observation": observation,
+            "action": action,
+            "url": url,
+            "plan": self.get_actor_active_plan(),
+            "reason": action_elements.get("reason", ""),
+            "observation highlight": action_elements.get("observation highlight", ""),
+            "retained element ids": action_elements.get("retained element ids", []),
+            "observation summary": action_elements.get("observation description", "")                  
+        }
+        self.actor.update_history(**DOCUMENTED_INTERACTION_ELEMENT_KEY_TO_CONTENT_MAP)
+        self.actor.del_observation_node()
+        assert self.actor.equal_history_length()
+
+        if len(action_element_list) > 1:
+            if self.config.others.logging:
+                self.log_step(
+                    status=status if "status" in locals() and isinstance(status, dict) else env.status(),
+                    plan=self.get_actor_active_plan(),
+                    **action_elements,
+                    **{f"actor {i}:{k}": _action_elements[k] for i, _action_elements in enumerate(action_element_list) for k in _action_elements.keys() if k != "input" and k != "instruction"}
+                )
+        else:
+            if self.config.others.logging:
+                self.log_step(
+                    status=status if "status" in locals() and isinstance(status, dict) else env.status(),
+                    plan=self.get_actor_active_plan(),
+                    **action_elements,
+                )
+        return status if "status" in locals() and isinstance(status, dict) else env.status()
+    
+    def is_completed(self, env) -> bool:
+        return env.done()
     
     def log_step(self, status, **kwargs):
         def serialize_message_list(message_list):
