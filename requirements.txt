@@ -9,3 +9,5 @@ matplotlib
 google
 google-generativeai
 google-ai-generativelanguage
+azure.identity
+python_dotenv
