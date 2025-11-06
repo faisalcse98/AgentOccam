@@ -1,3 +1,10 @@
+# About this repository
+
+Public repository forked from AgentOccam. Not currently in use.
+
+Major features added:
+* Support for Azure OpenAI.
+
 # AgentOccam
 Code for "[AgentOccam: A Simple Yet Strong Baseline for LLM-Based Web Agents](https://arxiv.org/abs/2410.13825)" (ICLR 2025).
 
