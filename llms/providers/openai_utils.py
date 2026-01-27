@@ -19,6 +19,7 @@ from msal import PublicClientApplication
 from openai import OpenAI, AzureOpenAI
 from PIL import Image
 from dotenv import load_dotenv
+from openai.types.chat.chat_completion import ChatCompletion
 
 load_dotenv()
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", None)
@@ -31,11 +32,36 @@ SCOPE = os.environ.get("P24_SCOPE", "https://cognitiveservices.azure.com/.defaul
 API_VERSION = "2025-01-01-preview"
 LOGGER = logging.getLogger(__name__)
 
+llm_stats = None
+
 headers = {
   "Content-Type": "application/json",
   "Authorization": f"Bearer {OPENAI_API_KEY}"
 }
 DEFAULT_SYSTEM_PROMPT = "You are a helpful assistant."
+
+def set_llm_stats(stats: dict):
+    global llm_stats
+    llm_stats = stats
+
+def update_llm_stats(model_name: str, response: ChatCompletion):
+    if llm_stats is None:
+        return
+    try:
+        prompt_tokens = response.usage.prompt_tokens
+        completion_tokens = response.usage.completion_tokens
+    except:
+        prompt_tokens = response.usage.input_tokens
+        completion_tokens = response.usage.output_tokens
+    if model_name not in llm_stats:
+        llm_stats[model_name] = {
+            "num_calls": 0,
+            "total_prompt_tokens": 0,
+            "total_completion_tokens": 0,
+        }
+    llm_stats[model_name]["num_calls"] += 1
+    llm_stats[model_name]["total_prompt_tokens"] += prompt_tokens
+    llm_stats[model_name]["total_completion_tokens"] += completion_tokens
 
 def ping_server(url, token):
     url = f"{url}/ping/"
@@ -263,6 +289,7 @@ def generate_from_openai_completion(
         top_p=top_p,
         stop=[stop_token],
     )
+    update_llm_stats(engine, response)
     answer: str = response["choices"][0]["text"]
     return answer
 
@@ -368,6 +395,7 @@ def generate_from_openai_chat_completion(
         top_p=top_p,
         stop=[stop_token] if stop_token else None,
     )
+    update_llm_stats(MODEL, response)
     answer: str = response.choices[0].message.content
     return answer
 

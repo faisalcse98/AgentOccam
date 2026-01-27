@@ -4,6 +4,7 @@ import re
 import argparse
 import os
 import shutil
+from datetime import datetime
 
 from AgentOccam.env import WebArenaEnvironmentWrapper
 
@@ -94,6 +95,7 @@ def run():
         #if task_config['task_id'] in list(range(600, 650))+list(range(681, 689)):
         #    print("Reddit post task. Sleep 30 mins.")
         #    time.sleep(1800)
+        start_time = datetime.now()
         env = WebArenaEnvironmentWrapper(config_file=config_file, 
                                         max_browser_rows=config.env.max_browser_rows, 
                                         max_steps=config.max_steps, 
@@ -108,6 +110,8 @@ def run():
         objective = env.get_objective()
         status = agent.act(objective=objective, env=env)
         env.close()
+        end_time = datetime.now()
+        execution_time = (end_time - start_time).total_seconds()
 
         if config.logging:
             with open(config_file, "r") as f:
@@ -127,7 +131,18 @@ def run():
                 "model": config.agent.actor.model if hasattr(config.agent, "actor") else config.agent.model_name,
                 "type": config.agent.type,
                 "logfile": re.search(r"/([^/]+/[^/]+\.json)$", log_file).group(1),
+                "execution_time": execution_time,
             }
+            llm_stats = agent.llm_stats
+            
+            if len(llm_stats) == 1:
+                model_name = list(llm_stats.keys())[0]
+                stats = list(llm_stats.values())[0]
+                summary_data["llm_model"] = model_name
+                summary_data["num_calls"] = stats["num_calls"]
+                summary_data["total_prompt_tokens"] = stats["total_prompt_tokens"]
+                summary_data["total_completion_tokens"] = stats["total_completion_tokens"]
+            
             if status:
                 summary_data.update(status)
             log_run(
