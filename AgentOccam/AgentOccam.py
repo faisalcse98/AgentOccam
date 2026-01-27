@@ -7,6 +7,7 @@ from AgentOccam.llms.titan import call_titan, call_titan_with_messages, arrange_
 from AgentOccam.llms.gpt import call_azureopenai, call_azureopenai_with_messages, arrange_message_for_azureopenai
 from AgentOccam.llms.gemini import call_gemini, call_gemini_with_messages, arrange_message_for_gemini
 from AgentOccam.utils import CURRENT_DIR, HOMEPAGE_URL
+from AgentOccam.llms.gpt import set_llm_stats
 
 from typing import Dict
 import re
@@ -1307,6 +1308,8 @@ class AgentOccam:
         self.critic = None
 
         self.trajectory = []
+        self.llm_stats = {}
+        set_llm_stats(self.llm_stats)
 
     def get_refined_objective(self):
         model_response = call_claude(self.root_prompt_template["objective_rephrasing_query"].replace("{objective}", self.objective))
